@@ -1,0 +1,4 @@
+# Render outputs (rebuilt by build.py)
+media/
+slides/
+__pycache__/

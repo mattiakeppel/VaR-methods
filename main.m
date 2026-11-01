@@ -63,7 +63,8 @@ Hist       = zeros(nT,2);
 FHS_P_G    = zeros(nT,2);   
 FHS_P_J    = zeros(nT,2);   
 ES_P_G     = zeros(nT,2);
-ES_P_J     = zeros(nT,2);   
+ES_P_J     = zeros(nT,2);
+PIT        = zeros(nT,4);   % forecast CDF at the realized return: Normal, HS, FHS-GARCH, FHS-GJR
 
 for t = TestWindow
     i = t - TestWindowStart + 1;
@@ -85,10 +86,14 @@ for t = TestWindow
     Hist(i,:) = -quantile(X, pVaR);
 
     % Portfolio FHS, GARCH(1,1) filter
-    [FHS_P_G(i,:), ES_P_G(i,:)] = fhsVaR(P_port.garch, 100*X, H, nSim, pVaR, 1);
+    [FHS_P_G(i,:), ES_P_G(i,:), RpG] = fhsVaR(P_port.garch, 100*X, H, nSim, pVaR, 1);
 
     % Portfolio FHS, GJR-GARCH(1,1) filter
-    [FHS_P_J(i,:), ES_P_J(i,:)] = fhsVaR(P_port.gjr, 100*X, H, nSim, pVaR, 1);
+    [FHS_P_J(i,:), ES_P_J(i,:), RpJ] = fhsVaR(P_port.gjr, 100*X, H, nSim, pVaR, 1);
+
+    % PIT of the realized return under each 1-day forecast distribution
+    r = PortfolioReturns(t);
+    PIT(i,:) = [normcdf(r/Sigma), pitECDF(X, r), pitECDF(RpG, r), pitECDF(RpJ, r)];
 end
 
 %% 5b. MONTE CARLO STABILITY OF THE FHS-GJR ESTIMATE
@@ -179,7 +184,7 @@ for m = 1:numel(Models)
     figM.Visible = 'on';
 end
 
-%% 10. CSV EXPORT OF VaR, ES AND VIOLATIONS (ALL MODELS)
+%% 10. CSV EXPORT OF VaR, ES, VIOLATIONS AND PIT (ALL MODELS)
 Lev = round(100*(1 - pVaR));   % [95 99]
 Series = table(TestDates(:), ActualReturns, 'VariableNames', {'Date', 'Realized_return'});
 for m = 1:numel(Models)
@@ -201,6 +206,16 @@ for m = 1:numel(Models)
     end
 end
 writetable(Series, fullfile(TabDir, 'var_es_series.csv'));
+
+% PIT values (u) and Normal scores (z = norminv(u); +-Inf outside the forecast support)
+PITTable = table(TestDates(:), ActualReturns, 'VariableNames', {'Date', 'Realized_return'});
+for m = 1:numel(Tags)
+    PITTable.(sprintf('u_%s', Tags{m})) = PIT(:,m);
+end
+for m = 1:numel(Tags)
+    PITTable.(sprintf('z_%s', Tags{m})) = norminv(PIT(:,m));
+end
+writetable(PITTable, fullfile(TabDir, 'pit.csv'));
 
 diary off;
 fprintf('Outputs saved in %s\n', fullfile(pwd, OutDir));
@@ -394,7 +409,7 @@ for k = 2:T
 end
 end
 
-function [VaR, ES] = fhsVaR(P, Y, H, nSim, pVaR, w)
+function [VaR, ES, Rp] = fhsVaR(P, Y, H, nSim, pVaR, w)
 V = filterVar(P, Y);
 Z = Y ./ sqrt(V);                                   
 eLast = Y(end,:);
@@ -414,6 +429,11 @@ ES = zeros(1, numel(pVaR));
 for k = 1:numel(pVaR)
     ES(k) = -mean(Rp(Rp <= q(k)));
 end
+end
+
+function u = pitECDF(S, r)
+% mid-point empirical CDF of the sample S evaluated at r (ties count one half)
+u = (sum(S < r) + 0.5*sum(S == r)) / numel(S);
 end
 
 function drawStatusPill(ax, x, w, y, h, isReject)
