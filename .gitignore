@@ -1,6 +1,9 @@
 #Generated output (figures, tables, log)
 output/
 
+#Data (not redistributed)
+portfolio.csv
+
 #MATLAB
 *.asv
 *.m~
