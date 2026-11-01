@@ -1,0 +1,17 @@
+#Generated output
+results/
+var_models_1_2_3.csv
+
+#MATLAB
+*.asv
+*.m~
+*.mat
+*.mex*
+slprj/
+codegen/
+
+#OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
