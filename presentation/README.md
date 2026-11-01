@@ -13,7 +13,7 @@ Source of the 24-slide presentation *Value at Risk (VaR) Forecasting and Diagnos
 - `data/backtests.json`: Kupiec, Christoffersen and conditional-coverage p-values per period, model and confidence level
 - `assets/`: portfolio table, Latin Modern font (GUST font licence), GitHub/ChatGPT marks and the repository QR code
 
-The data files come from the MATLAB forecasts produced by `../main.m`.
+The returns, VaR, PIT values and backtest results in `data/` match the output of `../main.m` (`output/tables/`).
 
 ## Build
 

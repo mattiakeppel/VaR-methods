@@ -14,6 +14,12 @@ $$\sigma_t^2 = \omega + \left(\alpha + \gamma\,\mathbb{1}_{\{\varepsilon_{t-1}<0
 
 Each regime is backtested with Kupiec (POF), Christoffersen independence (CCI) and conditional coverage (CC) tests at the 5% level. The script also checks the Monte Carlo stability of FHS-GJR for different numbers of simulations.
 
+Beyond the VaR quantiles, each model's full 1-day forecast distribution is evaluated with the probability integral transform
+
+$$u_t = \hat F_{t\mid t-1}(r_t), \qquad z_t = \Phi^{-1}(u_t)$$
+
+using the Normal CDF, or the empirical CDF of the window (HS) or of the simulated returns (FHS). For a correct model, $u_t$ is i.i.d. Uniform(0,1) and $z_t$ is standard Normal.
+
 ## Requirements
 
 MATLAB R2020a or later with:
@@ -34,12 +40,14 @@ main
 Results are written to `output/`:
 
 - `figures/`: VaR plots per model and backtest summaries per regime (PDF)
-- `tables/`: VaR, ES and violation series, backtest results, Monte Carlo stability (CSV)
+- `tables/`: VaR, ES and violation series, PIT values, backtest results, Monte Carlo stability (CSV)
 - `log.txt`: console output
+
+The slides, including the PIT and Q–Q diagnostics, are in [`presentation/`](presentation/final_presentation.pdf); see its [README](presentation/README.md) to rebuild them.
 
 ## Results
 
-For the sample portfolio we tested the models with(11 European stocks), no model is rejected by any test in the stable regime. In the crisis regime only FHS-GJR passes all three tests at both confidence levels:
+On the sample portfolio (11 European stocks), no model is rejected by any test in the stable regime. In the crisis regime only FHS-GJR passes all three tests at both confidence levels:
 
 | Model | Failures 95% (exp. 51.3) | Rejected by | Failures 99% (exp. 10.3) | Rejected by |
 |---|---|---|---|---|
