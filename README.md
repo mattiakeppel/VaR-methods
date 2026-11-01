@@ -55,3 +55,5 @@ On the sample portfolio (11 European stocks), no model is rejected by any test i
 | HS | 57 | CCI, CC | 15 | CCI, CC |
 | FHS-GARCH | 59 | CCI, CC | 19 | POF, CC |
 | FHS-GJR | 62 | none | 17 | none |
+
+The crisis PIT scores show the Normal model's thin tails: 15 scores below −3, against about 1.4 expected. HS and FHS-GJR each have 13 returns outside the forecast support ($u_t$ = 0 or 1), against about 8 expected.
