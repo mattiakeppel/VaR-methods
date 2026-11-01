@@ -1,14 +1,13 @@
-#Generated output
-results/
-var_models_1_2_3.csv
+#Generated output (figures, tables, log)
+output/
+
+#Data
+portfolio.csv
 
 #MATLAB
 *.asv
 *.m~
 *.mat
-*.mex*
-slprj/
-codegen/
 
 #OS / editor
 .DS_Store

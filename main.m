@@ -4,6 +4,18 @@ close all;
 rng(1);   % reproducibility of the FHS simulations
 % Requires the Econometrics Toolbox (garch, gjr, estimate)
 
+% output folders (generated files, not tracked by git)
+OutDir = 'output';
+FigDir = fullfile(OutDir, 'figures');
+TabDir = fullfile(OutDir, 'tables');
+if ~exist(FigDir, 'dir'), mkdir(FigDir); end
+if ~exist(TabDir, 'dir'), mkdir(TabDir); end
+
+% save the console output to a log file
+LogFile = fullfile(OutDir, 'log.txt');
+if exist(LogFile, 'file'), delete(LogFile); end
+diary(LogFile);
+
 %% 1. DATA
 T = readtable('portfolio.csv');
 date = T{:,1};
@@ -81,13 +93,19 @@ end
 
 %% 5b. MONTE CARLO STABILITY OF THE FHS-GJR ESTIMATE
 fprintf('\nAssessing Monte Carlo stability...\n');
-for n = [1000 5000 10000 20000]
+nSimGrid = [1000 5000 10000 20000];
+MCStd = zeros(numel(nSimGrid), 2);
+for g = 1:numel(nSimGrid)
+    n = nSimGrid(g);
     v = zeros(50,2);
     for s = 1:50
         v(s,:) = fhsVaR(P_port.gjr, 100*X, H, n, pVaR, 1);
     end
-    fprintf('nSim=%6d  std VaR95=%.4f  std VaR99=%.4f\n', n, std(v(:,1)), std(v(:,2)));
+    MCStd(g,:) = std(v);
+    fprintf('nSim=%6d  std VaR95=%.4f  std VaR99=%.4f\n', n, MCStd(g,1), MCStd(g,2));
 end
+writetable(table(nSimGrid(:), MCStd(:,1), MCStd(:,2), ...
+    'VariableNames', {'nSim', 'Std_VaR95', 'Std_VaR99'}), fullfile(TabDir, 'mc_stability.csv'));
 
 %% 6. GLOBAL MATRICES SETUP AND REGIME DEFINITION
 ActualReturns = PortfolioReturns(TestWindow);
@@ -104,22 +122,30 @@ fprintf('\n%s\n', repmat('#', 1, 112));
 fprintf('>>> START OF ANALYSIS: STABLE REGIME (01/2014 - 12/2017) <<<\n');
 fprintf('%s\n', repmat('#', 1, 112));
 
-runBacktestAndReport(ActualReturns(IndStable), VaRMatrixFull(IndStable, :), ...
+[BT_Stable, figStable] = runBacktestAndReport(ActualReturns(IndStable), VaRMatrixFull(IndStable, :), ...
     TestDates(IndStable), H, 0.95, 'Stable Regime (2014-2017)');
+writetable(BT_Stable, fullfile(TabDir, 'backtest_stable.csv'));
+exportgraphics(figStable, fullfile(FigDir, 'backtest_stable.pdf'), 'ContentType', 'vector');
+figStable.Visible = 'on';
 
 %% 8. FORMAL BACKTESTING: CRISIS REGIME (2018 - 2021)
 fprintf('\n%s\n', repmat('#', 1, 112));
 fprintf('>>> START OF ANALYSIS: CRISIS REGIME (01/2018 - 12/2021) <<<\n');
 fprintf('%s\n', repmat('#', 1, 112));
 
-runBacktestAndReport(ActualReturns(IndCrisis), VaRMatrixFull(IndCrisis, :), ...
+[BT_Crisis, figCrisis] = runBacktestAndReport(ActualReturns(IndCrisis), VaRMatrixFull(IndCrisis, :), ...
     TestDates(IndCrisis), H, 0.95, 'Crisis Regime (2018-2021)');
+writetable(BT_Crisis, fullfile(TabDir, 'backtest_crisis.csv'));
+exportgraphics(figCrisis, fullfile(FigDir, 'backtest_crisis.pdf'), 'ContentType', 'vector');
+figCrisis.Visible = 'on';
 
 %% 9. PLOTS OVER THE ENTIRE SAMPLE
 Names  = {'Normal','HS','FHS-P GARCH','FHS-P GJR'};
 Models = {Normal, Hist, FHS_P_G, FHS_P_J};
 
-fig = figure('Name', '1-day VaR: all models');
+% figures are drawn hidden, exported, and only then shown (avoids the
+% window being closed or redrawn while the PDF is being written)
+fig = figure('Name', '1-day VaR: all models', 'Visible', 'off');
 tl = tiledlayout(fig, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 ax = gobjects(numel(Models), 1);
 for m = 1:numel(Models)
@@ -133,29 +159,55 @@ end
 title(tl, '1-day VaR: 95% vs 99% comparison by model (Full Sample)');
 xlabel(tl, 'Date');
 ylabel(tl, '1-day VaR');
-linkaxes(ax, 'xy');   
+linkaxes(ax, 'xy');
+exportgraphics(fig, fullfile(FigDir, 'var_overview.pdf'), 'ContentType', 'vector');
+fig.Visible = 'on';
+
+% file-safe model tags (e.g. 'FHS-P GARCH' -> 'fhs_p_garch')
+Tags = lower(regexprep(Names, '[^A-Za-z0-9]+', '_'));
 
 for m = 1:numel(Models)
-    figure('Name', Names{m});
-    plot(TestDates, Models{m}(:,1), 'LineWidth', 1); hold on;
-    plot(TestDates, Models{m}(:,2), 'LineWidth', 1);
-    hold off; grid on;
-    xlabel('Date'); ylabel('1-day VaR');
-    legend({'VaR 95%', 'VaR 99%'}, 'Location', 'best');
-    title(sprintf('%s: 1-day VaR', Names{m}));
+    figM = figure('Name', Names{m}, 'Visible', 'off');
+    axM = axes('Parent', figM);
+    plot(axM, TestDates, Models{m}(:,1), 'LineWidth', 1); hold(axM, 'on');
+    plot(axM, TestDates, Models{m}(:,2), 'LineWidth', 1);
+    hold(axM, 'off'); grid(axM, 'on');
+    xlabel(axM, 'Date'); ylabel(axM, '1-day VaR');
+    legend(axM, {'VaR 95%', 'VaR 99%'}, 'Location', 'best');
+    title(axM, sprintf('%s: 1-day VaR', Names{m}));
+    exportgraphics(figM, fullfile(FigDir, sprintf('var_%s.pdf', Tags{m})), 'ContentType', 'vector');
+    figM.Visible = 'on';
 end
 
-%% 10. CSV EXPORT OF THE VaR OF THE FIRST THREE MODELS
-VaR_export = table(TestDates(:), Normal(:,1), Normal(:,2), ...
-    Hist(:,1), Hist(:,2), FHS_P_G(:,1), FHS_P_G(:,2), ...
-    'VariableNames', {'Date', 'VaR95_model1', 'VaR99_model1', ...
-    'VaR95_model2', 'VaR99_model2', 'VaR95_model3', 'VaR99_model3'});
-VaR_export.Realized_return = ActualReturns;
-writetable(VaR_export, 'var_models_1_2_3.csv');
+%% 10. CSV EXPORT OF VaR, ES AND VIOLATIONS (ALL MODELS)
+Lev = round(100*(1 - pVaR));   % [95 99]
+Series = table(TestDates(:), ActualReturns, 'VariableNames', {'Date', 'Realized_return'});
+for m = 1:numel(Models)
+    for l = 1:numel(Lev)
+        Series.(sprintf('VaR%d_%s', Lev(l), Tags{m})) = Models{m}(:,l);
+    end
+end
+% ES is only available for the FHS models
+ESModels = {ES_P_G, ES_P_J};
+for m = 1:numel(ESModels)
+    for l = 1:numel(Lev)
+        Series.(sprintf('ES%d_%s', Lev(l), Tags{m+2})) = ESModels{m}(:,l);
+    end
+end
+% violation indicator: 1 if the realized loss exceeds the VaR
+for m = 1:numel(Models)
+    for l = 1:numel(Lev)
+        Series.(sprintf('Viol%d_%s', Lev(l), Tags{m})) = double(ActualReturns < -Models{m}(:,l));
+    end
+end
+writetable(Series, fullfile(TabDir, 'var_es_series.csv'));
+
+diary off;
+fprintf('Outputs saved in %s\n', fullfile(pwd, OutDir));
 
 %% LOCAL FUNCTIONS (Risk Management & Diagnostics)
 
-function runBacktestAndReport(ReturnsBT, VaRMatrix, DatesBT, H, TestLevel, PeriodName)
+function [Results, figReport] = runBacktestAndReport(ReturnsBT, VaRMatrix, DatesBT, H, TestLevel, PeriodName)
     % Naming and Levels for the 4 remaining Models
     VaRNames = {'Normal_95', 'Hist_95', 'FHS_P_G_95', 'FHS_P_J_95', ...
                 'Normal_99', 'Hist_99', 'FHS_P_G_99', 'FHS_P_J_99'};
@@ -224,6 +276,15 @@ function runBacktestAndReport(ReturnsBT, VaRMatrix, DatesBT, H, TestLevel, Perio
     fprintf('\n  Rule: H0 is rejected if LR stat. > critical value (p-value < %.2f).\n', 1-TestLevel);
     fprintf('%s\n\n', repmat('=', 1, lineW));
 
+    % Results table (for CSV export)
+    Results = table(Models_BT, VaRLevels, Obs, ExpFails, Fails, ...
+        Tests(1).LR, Tests(1).PValue, Tests(1).Reject, ...
+        Tests(2).LR, Tests(2).PValue, Tests(2).Reject, ...
+        Tests(3).LR, Tests(3).PValue, Tests(3).Reject, ...
+        'VariableNames', {'Model', 'VaRLevel', 'Observations', 'ExpectedFailures', 'Failures', ...
+        'LR_POF', 'PValue_POF', 'Reject_POF', 'LR_CCI', 'PValue_CCI', 'Reject_CCI', ...
+        'LR_CC', 'PValue_CC', 'Reject_CC'});
+
     % 4. Graphical Matrix Report
     critPOF = chi2inv(TestLevel, 1);
     critCCI = chi2inv(TestLevel, 1);
@@ -238,7 +299,7 @@ function runBacktestAndReport(ReturnsBT, VaRMatrix, DatesBT, H, TestLevel, Perio
     totH = hTitle + hHeaderGroup + hHeaderCols + nModels*hRow + hFoot;
 
     figReport = figure('Name', sprintf('VaR Diagnostic Summary - %s', PeriodName), 'NumberTitle', 'off', ...
-        'Color', 'w', 'Position', [100 50 1150 550]);  % Height optimized for 8 models
+        'Color', 'w', 'Position', [100 50 1150 550], 'Visible', 'off');  % Height optimized for 8 models
     ax_rep = axes('Parent', figReport, 'Position', [0.03 0.04 0.94 0.92], ...
         'XLim', [0 1], 'YLim', [0 totH], 'YDir', 'reverse', 'Visible', 'off');
     hold(ax_rep, 'on');
