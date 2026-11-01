@@ -31,7 +31,7 @@ MATLAB R2020a or later with:
 
 ## Usage
 
-`main.m` reads `portfolio.csv` from the working directory: a `Date` column followed by one daily price column per stock, in the same order as the weights `W` in the script.
+`main.m` reads `portfolio.csv` from the working directory (included: daily Yahoo Finance close prices of the 11 sample stocks, 2006–2026): a `Date` column followed by one price column per stock, in the same order as the weights `W` in the script.
 
 ```matlab
 main
