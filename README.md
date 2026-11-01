@@ -1,6 +1,6 @@
 # VaR-methods
 
-MATLAB comparison of four 1-day Value-at-Risk models on a small fixed-weight portfolio of stocks, backtested over a stable period (2014–2017) and a crisis period (2018–2021).
+Comparison of four 1-day Value-at-Risk models on a small fixed-weight portfolio of stocks, backtested over a stable period (2014–2017) and a crisis period (2018–2021).
 
 ## Methodology
 
