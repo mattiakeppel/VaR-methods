@@ -1,0 +1,106 @@
+{
+  "blank": {
+    "title": "Blank holding page",
+    "notes": "Intentionally completely white. Advance once to start the title animation."
+  },
+  "title": {
+    "title": "VaR Forecasting and Diagnostic Validation",
+    "notes": "Title page: university name, the two title lines, a center-out hairline and the six author names enter in soft fades. Authors are in alphabetical order."
+  },
+  "question": {
+    "title": "Research question",
+    "notes": "The full research-question text is horizontally centered, with equal left/right margins. Assess one-day 95% and 99% VaR, its financial capital implication, and the information and limitations of backtesting."
+  },
+  "literature": {
+    "title": "Literature",
+    "notes": "Primary bibliographic records and paper links are retained in REFERENCES.md. UC measures frequency; IND measures first-order binary hit dependence; CC combines both. PIT evaluates marginal density calibration."
+  },
+  "methods": {
+    "title": "Models and tests",
+    "notes": "Normal, HS and actual FHS-GJR are the main comparison. GJR is the Glosten–Jagannathan–Runkle asymmetric GARCH filter; GARCH expands to generalized autoregressive conditional heteroskedasticity. UC/IND use chi-square(1); CC uses chi-square(2). A non-rejection is not proof of validity. All notation appears on the slide before use."
+  },
+  "fhs_filter": {
+    "title": "FHS · Motivation and method",
+    "notes": "The third model considered, for the 1-day VaR horizon, is the Filtered Historical Simulation, or FHS.\n\nFirst, consider the limitations of the alternatives:\n\nThe Parametric model relies on an analytical derivation that assumes strict normality, this model is fast, but it doesn’t capture fat tails\n\nMeanwhile, standard Historical Simulation is non-parametric, meaning it weights past data equally. This method uses real data but it’s slow to react at unexpected shock in the markets\n\nFHS bridges these limitations with a robust, semiparametric combination.\n\nFHS captures leverage with GJR-GARCH, filtering historical returns through conditional volatility to remove volatility clusters.\n\nOnce these historical returns are standardized and treated as independent and identically distributed, the model re-applies that volatility to future returns (of next day)\n\nThe critical advantage of this methodology is that FHS manages to retain the empirical tails of the distribution. In practice, this means we do not have to assume a clean, normal distribution; we keep the real-world extreme events found in our historical data, but we scale them dynamically to reflect current market volatility conditions.\n\nIn this way if the market suddenly enters a period of crisis, the FHS model will instantly adjust volatility upward by scaling historical shocks to reflect the new level of risk"
+  },
+  "fhs_theory": {
+    "title": "FHS · GJR filtering and rescaling",
+    "notes": "Assume zero conditional mean: mu_t = E[r_t | F_(t-1)] = 0, where F_(t-1) is the information available before day t. Since r_t = mu_t + epsilon_t, this assumption gives r_t = epsilon_t. The forecast mean is zero; realised returns and conditional volatility can still vary.\n\nThe base model used to filter variance is the GJR-GARCH(1,1), which extends the classic GARCH model to capture the leverage effect.\n\nsigma_t^2 = omega + beta sigma_(t-1)^2 + alpha epsilon_(t-1)^2 + gamma epsilon_(t-1)^2 I_(t-1).\n\nsigma_t^2: conditional variance; sigma_t: conditional volatility.\n\nω: intercept\n\nϵt-12: innovation/shock\n\nIt-1: variable dummy (0 if the shock>0, 1 if the shock<0)\n\nα: Measure the impact of new information (shocks) on volatility\n\nβ: Measures the persistence of volatility\n\nγ: Capture market asymmetry: typically, bad news (negative returns) increases volatility more than good news does\n\nPositivity: omega > 0, alpha and beta >= 0, alpha + gamma >= 0. Covariance stationarity with symmetric innovations: alpha + beta + gamma/2 < 1.\n\nz_t = r_t / sigma_t = epsilon_t / sigma_t: standardized errors.\n\nThe simulated return for the following day:\n\ntilde r_(t+1) = tilde epsilon_(t+1) = tilde sigma_(t+1) * tilde z."
+  },
+  "fhs_limits": {
+    "title": "FHS · Advantages, disadvantages and asymmetry",
+    "notes": "Advantages:\n\ninstant responsiveness  If there is a market crash today, the VaR calculated using FHS will be immediately higher tomorrow, providing protection for the portfolio\n\ndoesn’t assume the normal distribution\n\nit captures leverage effect  Stock market crashes generate more uncertainty than rallies\n\nDisadvantages:\n\nlong computation times\n\ndependence on the historical sample  if we test a historical period without crises in the standardized residuals, the simulated paths might turn out to be too much optimistic\n\nwith extreme stress or important outliers, the parameter estimation can fail, leading to unreliable volatility\n\nwhy we use the GJR-GARCH? Because the ARCH/GARCH models assume symmetry, while the GJR-GARCH consider the asymmetry"
+  },
+  "pit_definition": {
+    "title": "PIT and Rosenblatt Transformation",
+    "notes": "We now move to the Probability Integral Transform, which provides a benchmark for backtesting entire forecast distributions. Applying a random variable's true continuous CDF transforms it into a Uniform(0,1) variable. In U = F_X(X), X is the random return, F_X is its true continuous CDF, and U is its percentile, uniformly distributed between 0 and 1. For historical forecast evaluation, pair each forecast made using information through day t-1 with the realised portfolio return on day t. Evaluate each realised return using its corresponding forecast CDF. The resulting percentile is u_t. The conditional PIT, or sequential Rosenblatt transformation, accounts for temporal dependence by conditioning each CDF on the past. For example, a volatile day can lead to a wider forecast for the next day. Returns may have little correlation while their volatility is persistent. Conditioning lets the forecast reflect this persistence. Conditioning alone does not guarantee independent PIT values: that is the benchmark when the conditional forecasts are correct. There is one transformation per dated forecast, not an additional transformation of the already computed PIT. Source: Diebold, Gunther and Tay (1998), https://archive.nyu.edu/bitstream/2451/14779/1/SOR-98-6.pdf"
+  },
+  "pit_theory": {
+    "title": "PIT calibration and Normal scores",
+    "notes": "If the continuous, one-step-ahead conditional forecast distributions are correctly specified, the PIT values should be independent and identically distributed as Uniform(0,1). We examine their uniformity as a diagnostic of marginal calibration and check temporal independence separately. Applying the inverse standard Normal CDF converts the percentiles into Normal scores. It changes their numerical values while preserving their percentile information. These scores follow N(0,1) under correct forecasts; the transformation does not force misspecified forecasts to appear Normal. Compare the ordered scores with theoretical standard Normal quantiles in a Q-Q plot. The exact theorem assumes continuous conditional CDFs. Raw empirical CDFs and estimated forecasts do not automatically satisfy it. Source: Diebold, Gunther and Tay (1998), https://archive.nyu.edu/bitstream/2451/14779/1/SOR-98-6.pdf"
+  },
+  "correct_pit_setup": {
+    "title": "PIT · Changing predictive distributions · Static introduction",
+    "notes": "Static PIT diagram for the explanation: forecast distribution and CDF, PIT percentile, inverse-Normal transform and the two histogram panels. No observations have been processed. The diagram stays still until the presenter advances once to start the animation. The PDF omits this introductory step and keeps the completed animation frame."
+  },
+  "correct_pit": {
+    "title": "PIT · Changing predictive distributions",
+    "notes": "Each realised return moves through its own dated forecast CDF and becomes a percentile. Under correct forecasts, the accumulated percentiles should look approximately uniform. The inverse standard Normal CDF then converts these percentiles into scores that should look approximately standard Normal. The following Q-Q plot compares these scores with the standard Normal benchmark. \n\nSimulation with 240 changing Johnson SU true distributions and nearby, distinct predicted distributions. Both densities share one set of axes: the true unobserved density is a solid charcoal curve with light gray fill; the prediction is a slate-blue dashed curve with a thin white separation. Neither density is shifted or rescaled relative to the other. Shape, location and scale evolve at every time step. Seed 42 generates realised returns from the true distributions; every PIT is computed with its own predicted CDF, then converted to a Normal score with Phi inverse. PIT values are approximately uniform and the Normal-score histogram approximately N(0,1), rather than imposed. All 240 observations enter both histograms and the following Q-Q plot. Each particle follows its own dated CDF; faint active CDFs preserve its path while the highlighted distributions evolve. The layout follows the supplied reference: forecast CDF, PIT, inverse Normal across the top; return distribution and Normal-score histogram below. Enhanced pacing: 2 slow tracked observation(s) with actual return, PIT and Normal score before the overlapping stream; distance-weighted travel and equal arrival pauses. Labels sit outside particle paths. The bulk timeline is continuous and the empirical date readout is fixed. All observations enter the completed histograms."
+  },
+  "correct_qq": {
+    "title": "Correct-specification Q–Q",
+    "notes": "With theoretical standard Normal quantiles on the horizontal axis and ordered transformed scores on the vertical axis, correct forecasts should produce points approximately along the 45-degree line, allowing for sampling variation. \n\nThe 240 observations on the inverse-Normal CDF unfold directly into ordered-score Q-Q positions. X=Phi inverse((i-.5)/n); Y=the same sorted raw scores from the preceding PIT animation. The outer 5% in each tail is emphasized. The points are the same simulated-return forecast PIT scores from 240 changing Johnson SU true/forecast pairs. Forecasts are close to the true laws, so approximate Normal calibration and finite-sample departures are expected. The next demonstration changes only these Q-Q coordinates to illustrate unmodelled heavy tails."
+  },
+  "tail_qq": {
+    "title": "Q–Q tail misspecification",
+    "notes": "Systematic departures at the extremes suggest tail misspecification. Points below the line in the left tail suggest underestimated downside tail risk. Points above the line in the right tail suggest underestimated upside tail risk. \n\nOnly the Q-Q plot changes after the calibrated case. Scores move to centrally scaled Student-t(5) quantiles at the same plotting positions, keeping the center near slope one. Lower scores bend below the diagonal and upper scores above it. This is an explicit new pedagogical distribution, not an altered claim about the earlier sample or empirical FHS data. No second PIT animation, mean-shift sequence, or unobserved empirical tail is introduced."
+  },
+  "data": {
+    "title": "Data and portfolio",
+    "notes": "A LaTeX booktabs table in Latin Modern Roman: aligned rank, company and weight columns, horizontal rules, and a total row. Weights reproduce MATLAB W exactly. Windows are fixed by calendar. Close-price adjustment methodology is not documented."
+  },
+  "stable_tests": {
+    "title": "Backtests: 2014–2017",
+    "notes": "Original MATLAB estimator; exact p-values independently checked against pof, cci, cc. No model is rejected by these tests. Stress 99% GJR Kupiec p=.053332. Symmetric FHS-GARCH rejects stress CC at both levels. Non-rejection does not establish model validity."
+  },
+  "stable_returns": {
+    "title": "Returns and breaches: 2014–2017",
+    "notes": "One shared plot of all 1025 daily returns and both actual FHS_P_J negative VaR thresholds. A thin light-gray trace shows daily returns. The muted slate-blue 95% and warm-rust 99% VaR curves are continuous, with narrow white casings and direct endpoint labels. No dash slicing, smoothing, aggregation or downsampling is used. Filled dots mark all 54 95% breaches; open rings mark all 12 99% breaches, including observations that breach both thresholds. Counts match the original MATLAB backtests. Full vertical range and all observations are retained. No forecasts or results were recomputed."
+  },
+  "stress_tests": {
+    "title": "Backtests: 2018–2021",
+    "notes": "Original MATLAB estimator; exact p-values independently checked against pof, cci, cc. FHS-GJR alone avoids rejection in every test at both levels. Stress 99% GJR Kupiec p=.053332. Symmetric FHS-GARCH rejects stress CC at both levels. Non-rejection does not establish model validity."
+  },
+  "stress_returns": {
+    "title": "Returns and breaches: 2018–2021",
+    "notes": "One shared plot of all 1026 daily returns and both actual FHS_P_J negative VaR thresholds. A thin light-gray trace shows daily returns. The muted slate-blue 95% and warm-rust 99% VaR curves are continuous, with narrow white casings and direct endpoint labels. No dash slicing, smoothing, aggregation or downsampling is used. Filled dots mark all 62 95% breaches; open rings mark all 17 99% breaches, including observations that breach both thresholds. Counts match the original MATLAB backtests. Full vertical range and all observations are retained. No forecasts or results were recomputed. Full-period chart only; the 2020 detail inset is removed."
+  },
+  "empirical_pit_setup": {
+    "title": "FHS-GJR · Crisis PIT · 2018–2021 · Static introduction",
+    "notes": "Static PIT diagram for the explanation: forecast distribution and CDF, PIT percentile, inverse-Normal transform and the two histogram panels. No observations have been processed. The diagram stays still until the presenter advances once to start the animation. The PDF omits this introductory step and keeps the completed animation frame."
+  },
+  "empirical_pit": {
+    "title": "FHS-GJR · Crisis PIT · 2018–2021",
+    "notes": "Actual crisis-period FHS_P_J forecasts and realised returns only: 2018-01-02 through 2021-12-31, 1026 observations. GJR parameters are estimated using Gaussian likelihood; fhsVaR resamples historical standardized residuals using randi, so the final FHS forecast is empirical. One readable 2.8-second tracked example precedes an overlapping cloud of actual dated observations: 1.6-second flights, launched every .05 seconds, with about 32 simultaneous particles and quiet motion trails. Every dot follows its own actual dated forecast-CDF path. Faint active CDFs show overlapping dated laws; the solid curve and density highlight the latest launched date. No intermediate fitted forecast is invented. Every intervening observation enters both histograms and every score enters the following Q-Q plot. Diagnostics now use raw ECDF PITs. Values 0/1 correspond to returns beyond forecast support, and have infinite Normal scores. Those are shown at the animation boundary and separately marked by arrows in Q-Q plots; no arbitrary finite-rank plateau is substituted. The layout follows the supplied reference: forecast CDF, PIT, inverse Normal across the top; return distribution and Normal-score histogram below. Enhanced pacing: one tracked observation with its actual return, PIT and Normal score; distance-weighted travel and equal arrival pauses. Labels sit outside particle paths. The bulk timeline is continuous and the empirical date readout is fixed. All observations enter the completed histograms."
+  },
+  "empirical_qq": {
+    "title": "Crisis FHS Q–Q · 2018–2021",
+    "notes": "The 1026 observations on the inverse-Normal CDF unfold directly into ordered-score Q-Q positions. X=Phi inverse((i-.5)/n); Y=the same sorted raw scores from the preceding PIT animation. Actual crisis FHS_P_J forecast laws: all 1026 observations retained. Finite scores keep exact coordinates on a vertical axis from -12 to +12. The 9 lower and 4 upper raw ECDF endpoint scores remain infinite and appear as open circles on separately labelled infinity margin rows, with no arrows or finite-score substitution."
+  },
+  "qq_comparison": {
+    "title": "Crisis Q–Q comparison · 2018–2021",
+    "notes": "All 1,026 actual crisis-day forecast/return pairs per model. All three plots use identical theoretical-quantile axes from -4 to +4 and Normal-score axes from -12 to +12. Every finite score is shown at its exact value, including the Normal minimum -11.420577 and maximum 6.134460. No finite values are clipped or replaced by boundary symbols. HS/FHS raw empirical PIT endpoints remain infinite and appear as open circles at their actual ranks on separately labelled infinity margin rows; there are no arrows or invented finite replacements. HS: 8 below and 5 above support. FHS-GJR: 9 below and 4 above. Original raw scores, forecasts, VaR results and MATLAB fitting are preserved."
+  },
+  "conclusions": {
+    "title": "Conclusions",
+    "notes": "Only actual GJR avoids all stress-window rejections. Normal fails stress 99% Kupiec, correcting the outline. GARCH fixes stress IND at 99%, but still rejects UC. The inference is specific to these data and windows."
+  },
+  "limits": {
+    "title": "Research limitations",
+    "notes": "Calendar-specific results, portfolio-level filter, backward-looking inputs, selection biases and one-day horizon. No ES backtest or severity score is added. Discrete PIT corrections constrain empirical tail interpretation."
+  },
+  "closing": {
+    "title": "Thank you",
+    "notes": "Animation: https://github.com/ManimCommunity/manim. Manim Slides extends Manim for live presentations: https://github.com/jeertmans/manim-slides. Project source, slides and analysis: https://github.com/mattiakeppel/VaR-methods. The presentation was coded using OpenAI Codex."
+  }
+}
